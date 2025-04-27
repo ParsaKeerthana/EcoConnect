@@ -35,7 +35,7 @@ export const Home: React.FC = () => {
           const accessToken = await getAccessTokenSilently();
           setToken(accessToken);
         } catch (error) {
-          console.error('Error getting access token:', error);
+          console.error("Error getting access token:", error);
         }
       }
     };
@@ -45,7 +45,10 @@ export const Home: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY < document.body.scrollHeight - window.innerHeight - 100) {
+      if (
+        window.scrollY <
+        document.body.scrollHeight - window.innerHeight - 100
+      ) {
         setCanFetch(true); // 🚀 Unlock fetching if user scrolled up
       }
     };
@@ -69,12 +72,12 @@ export const Home: React.FC = () => {
     try {
       const formattedOlderThan = toLocalDateTimeFormat(oldest);
       const res = await axios.get(
-          `${Config.FEED_SERVICE_URL}/${user.sub}?limit=50&olderThan=${encodeURIComponent(
-              formattedOlderThan
-          )}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+        `${Config.FEED_SERVICE_URL}/${
+          user.sub
+        }?limit=50&olderThan=${encodeURIComponent(formattedOlderThan)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       const newPosts: Post[] = res.data;
 
@@ -91,24 +94,27 @@ export const Home: React.FC = () => {
     }
   }, [feed, token, user?.sub, isFetching, canFetch]);
 
-
-
   const observer = useRef<IntersectionObserver | null>(null);
-  const lastPostRef = useCallback((node: HTMLDivElement | null) => {
-    if (observer.current) observer.current.disconnect();
+  const lastPostRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observer.current) observer.current.disconnect();
 
-    observer.current = new IntersectionObserver((entries) => {
-      const first = entries[0];
-      if (first.isIntersecting && !isFetching && canFetch) {
-        fetchOlderPosts();
-      }
-    }, {
-      rootMargin: "100px",
-    });
+      observer.current = new IntersectionObserver(
+        (entries) => {
+          const first = entries[0];
+          if (first.isIntersecting && !isFetching && canFetch) {
+            fetchOlderPosts();
+          }
+        },
+        {
+          rootMargin: "100px",
+        }
+      );
 
-    if (node) observer.current.observe(node);
-  }, [fetchOlderPosts, isFetching, canFetch]);
-
+      if (node) observer.current.observe(node);
+    },
+    [fetchOlderPosts, isFetching, canFetch]
+  );
 
   // Dummy data for fallback
   const getDummyFeed = (): Post[] => [
@@ -178,11 +184,12 @@ export const Home: React.FC = () => {
     setLoading(true);
     try {
       const res = await axios.get(
-          `${Config.FEED_SERVICE_URL}/${user.sub}?limit=50`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+        `${Config.FEED_SERVICE_URL}/${user.sub}?limit=50`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       const data: Post[] = res.data;
 
@@ -193,23 +200,23 @@ export const Home: React.FC = () => {
         return true;
       });
 
-      setFeed(unique.length > 0 ? unique : getDummyFeed());
+      setFeed(unique);
     } catch (error) {
       console.error("Error fetching feed:", error);
       toast.error("Failed to load feed");
-      setFeed(getDummyFeed());
-      setMessage("Failed to load feed");
     } finally {
       setLoading(false);
     }
   };
   const toLocalDateTimeFormat = (iso: string): string => {
     const date = new Date(iso);
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+      date.getDate()
+    )}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+      date.getSeconds()
+    )}`;
   };
-
-
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -223,15 +230,15 @@ export const Home: React.FC = () => {
         <div className="w-full max-w-xl flex flex-col gap-[30px]">
           <div className="flex flex-col gap-2.5">
             <Textarea
-                placeholder="What's happening?"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="mt-2 w-full p-4 border border-[#1D3016] rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-[#1D3016]"
+              placeholder="What's happening?"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="mt-2 w-full p-4 border border-[#1D3016] rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-[#1D3016]"
             />
             <Button
-                onClick={handlePostSubmit}
-                className="mt-2 bg-[#1D3016] text-white rounded-md py-2 w-full"
-                disabled={loading}
+              onClick={handlePostSubmit}
+              className="mt-2 bg-[#1D3016] text-white rounded-md py-2 w-full"
+              disabled={loading}
             >
               {loading ? "Posting..." : "Post"}
             </Button>
@@ -243,33 +250,33 @@ export const Home: React.FC = () => {
             ) : feed.length === 0 ? (
               <p className="text-center text-gray-500">No posts available.</p>
             ) : (
-                feed.map((post, index) => {
-                  const isLast = index === feed.length - 1;
-                  return (
-                    <div
-                        key={post.postId}
-                        ref={isLast ? lastPostRef : null}
-                        className="flex flex-col gap-4 p-4 border rounded-md bg-gray-50 shadow-md"
-                    >
-                      <div className="flex gap-3 items-start">
-                        <UserProfileCard
-                            userName={post.authorName}
-                            postContent={post.content}
-                            profileImage={profileImage}
-                        />
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {post.createdDate
-                            ? formatDistanceToNow(new Date(post.createdDate), {
-                              addSuffix: true,
-                            })
-                            : "Just now"}
-                      </div>
+              feed.map((post, index) => {
+                const isLast = index === feed.length - 1;
+                return (
+                  <div
+                    key={post.postId}
+                    ref={isLast ? lastPostRef : null}
+                    className="flex flex-col gap-4 p-4 border rounded-md bg-gray-50 shadow-md"
+                  >
+                    <div className="flex gap-3 items-start">
+                      <UserProfileCard
+                        userName={post.authorName}
+                        postContent={post.content}
+                        profileImage={profileImage}
+                      />
                     </div>
+                    <div className="text-sm text-gray-500">
+                      {post.createdDate
+                        ? formatDistanceToNow(new Date(post.createdDate), {
+                            addSuffix: true,
+                          })
+                        : "Just now"}
+                    </div>
+                  </div>
                 );
               })
-          )}
-          {loading && feed.length > 0 && (
+            )}
+            {loading && feed.length > 0 && (
               <p className="text-center text-gray-500">Loading more...</p>
             )}
           </div>
