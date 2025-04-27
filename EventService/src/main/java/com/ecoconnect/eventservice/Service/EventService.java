@@ -29,7 +29,7 @@ public class EventService {
     {
         validateEvent(event);
         Event savedEvent = eventRepository.save(event);
-        //eventPublisher.publishEventCreated(savedEvent.getId(), savedEvent.getCreatorId(), savedEvent.getName());
+        eventPublisher.publishEventCreated(savedEvent.getId(), savedEvent.getCreatorId(), savedEvent.getName());
 
         return savedEvent;
     }
@@ -77,7 +77,7 @@ public class EventService {
         userIds.add(userId);
         event.setRsvpUsers(userIds);
         eventRepository.save(event);
-//        eventPublisher.publishEventRSVP(eventId, userId, event.getName(), userEmail);
+        eventPublisher.publishEventRSVP(eventId, userId, event.getName(), userEmail);
         return event;
     }
 
