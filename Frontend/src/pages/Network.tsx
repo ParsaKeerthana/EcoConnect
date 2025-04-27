@@ -29,9 +29,26 @@ export function Network() {
   const [hasMore, setHasMore] = useState(true);
   const observer = useRef<IntersectionObserver | null>(null);
   const lastUserRef = useRef<HTMLDivElement | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [followedUsers, setFollowedUsers] = useState<Set<string>>(new Set());
+  const { user: currentUser, isAuthenticated,  getAccessTokenSilently } = useAuth0();
 
-  const { user: currentUser, isAuthenticated } = useAuth0();
   const USERS_PER_PAGE = 25;
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      if (isAuthenticated) {
+        try {
+          const accessToken = await getAccessTokenSilently();
+          setToken(accessToken);
+        } catch (error) {
+          console.error('Error getting access token:', error);
+        }
+      }
+    };
+
+    fetchToken();
+  }, [isAuthenticated, getAccessTokenSilently]);
 
   const fetchUsers = useCallback(async (pageToFetch = 1) => {
     if (!currentUser) return;
@@ -44,7 +61,11 @@ export function Network() {
         endpoint = `/${currentUser.sub}/following`;
       }
 
-      const res = await axios.get(`${Config.USER_SERVICE_URL}${endpoint}`);
+      const res = await axios.get(`${Config.USER_SERVICE_URL}${endpoint}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data: User[] = res.data;
 
       const filteredData =
@@ -79,6 +100,7 @@ export function Network() {
       setPage(1);
       setUsers([]);
       setHasMore(true);
+      setFollowedUsers(new Set());
       fetchUsers(1);
     }
   }, [activeTab, isAuthenticated, currentUser, fetchUsers]);
@@ -114,19 +136,24 @@ export function Network() {
           ? `/${currentUser.sub}/unfollow/${targetUserId}`
           : `/${currentUser.sub}/follow/${targetUserId}`;
 
-      await axios.post(`${Config.USER_SERVICE_URL}${endpoint}`);
+      await axios.post(`${Config.USER_SERVICE_URL}${endpoint}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },});
 
-      setUsers((prev) => {
-        if (activeTab === "following") {
-          return prev.filter((user) => user.id !== targetUserId);
-        } else {
-          return prev.map((user) =>
-              user.id === targetUserId
-                  ? { ...user, isFollowing: !currentlyFollowing }
-                  : user
-          );
-        }
-      });
+      if (activeTab === "following") {
+        setUsers((prev) => prev.filter((user) => user.id !== targetUserId));
+      } else if (activeTab === "followers") {
+        setUsers((prev) =>
+            prev.map((user) =>
+                user.id === targetUserId
+                    ? { ...user, isFollowing: !currentlyFollowing }
+                    : user
+            )
+        );
+      } else if (activeTab === "discover" && !currentlyFollowing) {
+        setFollowedUsers((prev) => new Set(prev).add(targetUserId));
+      }
 
       toast.success(currentlyFollowing ? "Unfollowed successfully" : "Followed successfully");
     } catch (err) {
@@ -230,10 +257,13 @@ export function Network() {
                             activeTab !== "followers" && (
                                 <Button
                                     onClick={() => handleFollow(user.id, user.isFollowing)}
+                                    disabled={activeTab === "discover" && followedUsers.has(user.id)}
                                     className={`w-full rounded-md px-4 py-2 text-sm transition-all ${
                                         user.isFollowing
                                             ? "bg-red-600 text-white hover:bg-red-700"
-                                            : "bg-[#1d3016] text-white hover:bg-[#162c10]"
+                                            : activeTab === "discover" && followedUsers.has(user.id)
+                                                ? "bg-gray-400 text-white cursor-not-allowed"
+                                                : "bg-[#1d3016] text-white hover:bg-[#162c10]"
                                     }`}
                                 >
                                   {user.isFollowing ? "Unfollow" : "Follow"}

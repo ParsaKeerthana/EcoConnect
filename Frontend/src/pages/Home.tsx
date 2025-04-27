@@ -23,22 +23,92 @@ export const Home: React.FC = () => {
   const [message, setMessage] = useState("");
   const [feed, setFeed] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user, isAuthenticated } = useAuth0();
+  const { getAccessTokenSilently, isAuthenticated, user } = useAuth0();
+  const [token, setToken] = useState<string | null>(null); // token state
+  const [isFetching, setIsFetching] = useState(false);
+  const [canFetch, setCanFetch] = useState(true);
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      if (isAuthenticated) {
+        try {
+          const accessToken = await getAccessTokenSilently();
+          setToken(accessToken);
+        } catch (error) {
+          console.error('Error getting access token:', error);
+        }
+      }
+    };
+
+    fetchToken();
+  }, [isAuthenticated, getAccessTokenSilently]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY < document.body.scrollHeight - window.innerHeight - 100) {
+        setCanFetch(true); // 🚀 Unlock fetching if user scrolled up
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const fetchOlderPosts = useCallback(async () => {
+    if (!user?.sub || feed.length === 0 || isFetching || !canFetch) return;
+
+    setIsFetching(true);
+    setCanFetch(false); // 🚨 Lock after one fetch
+
+    const oldest = feed[feed.length - 1]?.createdDate;
+    if (!oldest) {
+      setIsFetching(false);
+      return;
+    }
+
+    try {
+      const formattedOlderThan = toLocalDateTimeFormat(oldest);
+      const res = await axios.get(
+          `${Config.FEED_SERVICE_URL}/${user.sub}?limit=50&olderThan=${encodeURIComponent(
+              formattedOlderThan
+          )}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+      );
+      const newPosts: Post[] = res.data;
+
+      const seen = new Set(feed.map((p) => p.postId));
+      const filtered = newPosts.filter((p) => p.postId && !seen.has(p.postId));
+
+      if (filtered.length > 0) {
+        setFeed((prev) => [...prev, ...filtered]);
+      }
+    } catch (err) {
+      console.error("Error fetching older posts:", err);
+    } finally {
+      setIsFetching(false);
+    }
+  }, [feed, token, user?.sub, isFetching, canFetch]);
+
+
 
   const observer = useRef<IntersectionObserver | null>(null);
-  const lastPostRef = useCallback(
-      (node: HTMLDivElement | null) => {
-        if (loading) return;
-        if (observer.current) observer.current.disconnect();
-        observer.current = new IntersectionObserver((entries) => {
-          if (entries[0].isIntersecting) {
-            fetchOlderPosts();
-          }
-        });
-        if (node) observer.current.observe(node);
-      },
-      [loading, feed]
-  );
+  const lastPostRef = useCallback((node: HTMLDivElement | null) => {
+    if (observer.current) observer.current.disconnect();
+
+    observer.current = new IntersectionObserver((entries) => {
+      const first = entries[0];
+      if (first.isIntersecting && !isFetching && canFetch) {
+        fetchOlderPosts();
+      }
+    }, {
+      rootMargin: "100px",
+    });
+
+    if (node) observer.current.observe(node);
+  }, [fetchOlderPosts, isFetching, canFetch]);
+
 
   // Dummy data for fallback
   const getDummyFeed = (): Post[] => [
@@ -67,7 +137,7 @@ export const Home: React.FC = () => {
 
   // Handle post submission
   const handlePostSubmit = async () => {
-    if (!isAuthenticated || !user?.sub) {
+    if (!isAuthenticated || !user?.sub || !token) {
       toast.error("You're not logged in");
       return;
     }
@@ -88,7 +158,11 @@ export const Home: React.FC = () => {
     setMessage("");
 
     try {
-      await axios.post(`${Config.POST_SERVICE_URL}/createPost`, post);
+      await axios.post(`${Config.POST_SERVICE_URL}/createPost`, post, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       toast.success("Post created successfully!");
       fetchFeed(); // refresh feed after post
     } catch (error) {
@@ -104,7 +178,11 @@ export const Home: React.FC = () => {
     setLoading(true);
     try {
       const res = await axios.get(
-          `${Config.FEED_SERVICE_URL}/${user.sub}?limit=50`
+          `${Config.FEED_SERVICE_URL}/${user.sub}?limit=50`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
       );
       const data: Post[] = res.data;
 
@@ -132,38 +210,6 @@ export const Home: React.FC = () => {
   };
 
 
-  const fetchOlderPosts = async () => {
-    if (!user?.sub || feed.length === 0 || loading) return;
-
-    const oldest = feed[feed.length - 1]?.createdDate;
-    if (!oldest) return;
-
-
-    const formattedOlderThan = toLocalDateTimeFormat(oldest);
-
-    setLoading(true);
-    try {
-      const res = await axios.get(
-          `${Config.FEED_SERVICE_URL}/${user.sub}?limit=50&olderThan=${encodeURIComponent(
-              formattedOlderThan
-          )}`
-      );
-      const newPosts: Post[] = res.data;
-
-      const seen = new Set(feed.map((p) => p.postId));
-      const filtered = newPosts.filter(
-          (p) => p.postId && !seen.has(p.postId)
-      );
-
-      if (filtered.length > 0) {
-        setFeed((prev) => [...prev, ...filtered]);
-      }
-    } catch (err) {
-      console.error("Error fetching older posts:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (!isAuthenticated) return;
