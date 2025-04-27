@@ -93,10 +93,7 @@ export function Profile() {
   useEffect(() => {
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver((entries) => {
-      if (
-          entries[0].isIntersecting &&
-          displayedPosts.length < posts.length
-      ) {
+      if (entries[0].isIntersecting && displayedPosts.length < posts.length) {
         const nextPage = page + 1;
         const nextSlice = posts.slice(0, nextPage * POSTS_PER_PAGE);
         setDisplayedPosts(nextSlice);
@@ -131,9 +128,9 @@ export function Profile() {
         )
       );
       setDisplayedPosts((prev) =>
-          prev.map((post) =>
-              post.postId === postId ? { ...post, content: editContent } : post
-          )
+        prev.map((post) =>
+          post.postId === postId ? { ...post, content: editContent } : post
+        )
       );
       setEditPostId(null);
       toast.success("Post updated successfully!");
@@ -211,152 +208,137 @@ export function Profile() {
     );
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 p-4 h-[calc(100vh-64px)] flex flex-col">
-      {/* Sticky Profile Card */}
-      <div className="sticky top-16 z-10 bg-white border shadow-lg rounded-2xl p-6 mb-4">
-        <div className="flex items-center gap-4 mb-4">
-          <UserIcon className="w-10 h-10 text-[#1d3016]" />
+    <div className="max-w-3xl mx-auto mt-10 p-4 h-[calc(100vh-64px)] flex flex-col bg-gray-50 rounded-xl">
+      {/* Profile Section */}
+      <div className="bg-white p-6 rounded-2xl shadow-lg mb-6 flex gap-6 items-center">
+        <img
+          src={userData?.profileImage || "/default-avatar.png"}
+          alt="Profile"
+          className="w-24 h-24 rounded-full object-cover border-4 border-[#1d3016]"
+        />
+        <div className="flex-1">
           <h1 className="text-3xl font-semibold text-[#1d3016]">
-            Your Profile
+            {userData?.userName}
           </h1>
-        </div>
-        <div className="ml-2 space-y-3 text-gray-700">
-          <p className="flex items-center gap-2">
-            <UserIcon size={18} className="text-[#1d3016]" />{" "}
-            <strong>Name:</strong> {userData?.userName}
+          <p className="text-gray-600">
+            {userData?.bio || "This user hasn't added a bio yet."}
           </p>
-          <p className="flex items-center gap-2">
-            <Mail size={18} className="text-[#1d3016]" />{" "}
-            <strong>Email:</strong> {userData?.email}
+          <p className="text-gray-500">
+            📍 {userData?.location || "Location not set"}
           </p>
-          <p className="flex items-center gap-2">
-            <Users size={18} className="text-[#1d3016]" />{" "}
-            <strong>Followers:</strong> {userData?.followers.length}
-          </p>
-          <p className="flex items-center gap-2">
-            <UserPlus size={18} className="text-[#1d3016]" />{" "}
-            <strong>Following:</strong> {userData?.following.length}
-          </p>
-          <p className="flex items-center gap-2">📍 <strong>Location:</strong> {userData?.location || "N/A"}</p>
-          <p className="flex items-center gap-2">📝 <strong>About me:</strong> {userData?.bio || "N/A"}</p>
+
+          {/* Edit Profile Button */}
           <button
             onClick={() => setIsEditingProfile(true)}
-            className="absolute bottom-4 right-4 bg-white border rounded-full p-2 shadow hover:bg-gray-100 group"
+            className="mt-4 bg-[#1d3016] text-white py-2 px-4 rounded-full shadow-md hover:bg-[#162c10] transition-colors duration-200"
           >
-            <Pencil size={18} className="text-gray-600 group-hover:text-black" />
-            <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs bg-black text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              Edit
-            </span>
+            Edit Profile
           </button>
         </div>
-     </div>
+      </div>
 
-      {/* Edit Profile Modal */}
-    {isEditingProfile && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md space-y-4">
-            <h2 className="text-xl font-semibold text-[#1d3016] mb-2">
-              Edit Profile
-            </h2>
-            <p>Location:</p>
-            <input
-              type="text"
-              name="location"
-              value={profileForm.location}
-              onChange={handleProfileInputChange}
-              placeholder="Location"
-              className="w-full p-2 border border-[#1d3016] rounded"
-            />
-            <p>About:</p>
-            <textarea
-              name="bio"
-              value={profileForm.bio}
-              onChange={handleProfileInputChange}
-              placeholder="Bio"
-              rows={3}
-              className="w-full p-2 border border-[#1d3016] rounded resize-none"
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
-                onClick={() => setIsEditingProfile(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="bg-[#1d3016] hover:bg-[#162c10] text-white px-4 py-2 rounded"
-                onClick={handleSaveProfile}
-              >
-                Save
-              </button>
-            </div>
-          </div>
+      {/* Analytics */}
+      <div className="grid grid-cols-3 gap-6 mb-6">
+        <div className="bg-white p-6 rounded-lg shadow-md text-center">
+          <p className="text-lg font-semibold text-[#1d3016]">Followers</p>
+          <p className="text-2xl font-bold text-[#1d3016]">
+            {userData?.followers.length}
+          </p>
         </div>
-      )}
+        <div className="bg-white p-6 rounded-lg shadow-md text-center">
+          <p className="text-lg font-semibold text-[#1d3016]">Following</p>
+          <p className="text-2xl font-bold text-[#1d3016]">
+            {userData?.following.length}
+          </p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-md text-center">
+          <p className="text-lg font-semibold text-[#1d3016]">Posts</p>
+          <p className="text-2xl font-bold text-[#1d3016]">{posts.length}</p>
+        </div>
+      </div>
 
-      {/* Scrollable Posts Section */}
-      <div className="flex-1 overflow-y-auto pr-1">
-        <h2 className="text-2xl font-bold mb-4 text-[#1d3016]">Your Posts</h2>
+      {/* Posts Section */}
+      <div className="flex-1 overflow-y-auto">
+        <h2 className="text-2xl font-bold text-[#1d3016] mb-4">Your Posts</h2>
         <ul className="space-y-4">
-          {displayedPosts.map((post, index) => (
-            <li
-              key={post.postId}
-              className="bg-white p-4 border border-[#1d3016] rounded-xl shadow"
-              ref={index === displayedPosts.length - 1 ? lastPostRef : undefined}
-            >
-              {editPostId === post.postId ? (
-                <>
-                  <textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full border border-[#1d3016] rounded p-2 mb-3 resize-none"
-                    rows={3}
-                  />
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => handleSave(post.postId)}
-                      className="flex items-center gap-1 bg-[#1d3016] hover:bg-[#162c10] text-white px-3 py-1.5 rounded"
-                    >
-                      <Save size={16} /> Save
-                    </button>
-                    <button
-                      onClick={() => setEditPostId(null)}
-                      className="flex items-center gap-1 bg-gray-400 hover:bg-gray-500 text-white px-3 py-1.5 rounded"
-                    >
-                      <X size={16} /> Cancel
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p className="mb-2 text-gray-800">{post.content}</p>
-                  <div className="text-sm text-gray-500 mb-2 flex items-center gap-1">
-                    <CalendarDays size={16} />
-                    {formatDate(post.lastModifiedDate)}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      className="flex items-center gap-1 text-[#1d3016] hover:underline"
-                      onClick={() => handleEdit(post)}
-                    >
-                      <Edit3 size={16} /> Edit
-                    </button>
-                    <button
-                      className="flex items-center gap-1 text-red-600 hover:underline"
-                      onClick={() => handleDelete(post.postId!)}
-                    >
-                      <Trash2 size={16} /> Delete
-                    </button>
-                  </div>
-                </>
-              )}
-            </li>
-          ))}
+          {displayedPosts.map((post, index) => {
+            const isLast = index === displayedPosts.length - 1;
+            return (
+              <li
+                key={post.postId}
+                ref={isLast ? lastPostRef : undefined}
+                className="bg-white p-4 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 border-4 border-[#1d3016]"
+              >
+                {editPostId === post.postId ? (
+                  <>
+                    <textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="w-full border border-[#1d3016] rounded p-2 mb-3 resize-none"
+                      rows={3}
+                    />
+                    <div className="flex gap-3 justify-end">
+                      <button
+                        onClick={() => handleSave(post.postId)}
+                        className="bg-[#1d3016] text-white py-2 px-4 rounded-md hover:bg-[#162c10] transition-colors duration-200"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditPostId(null)}
+                        className="bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors duration-200"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="mb-2 text-gray-800">{post.content}</p>
+                    <div className="flex justify-between items-center text-sm text-gray-500">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays size={16} />
+                        {formatDate(post.lastModifiedDate)}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(post)}
+                          className="text-[#1d3016] hover:underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(post.postId!)}
+                          className="text-red-600 hover:underline"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </li>
+            );
+          })}
         </ul>
+
+        {/* Empty State for Posts */}
+        {displayedPosts.length === 0 && (
+          <p className="text-center text-gray-500 mt-4">
+            You have no posts yet.
+          </p>
+        )}
+
+        {/* Infinite Scroll Indicator */}
         {displayedPosts.length === posts.length && (
-            <p className="text-center text-gray-500 mt-4">No more posts to show.</p>
+          <p className="text-center text-gray-500 mt-4">
+            No more posts to show.
+          </p>
         )}
       </div>
+
+      {/* Toast Notifications */}
+      <ToastContainer />
     </div>
   );
 }
