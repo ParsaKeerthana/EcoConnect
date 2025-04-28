@@ -171,7 +171,7 @@ export const Marketplace: React.FC = () => {
                   <Img src={product.image || "images/logistics-transfer.svg"} alt={product.name} className="h-[150px] w-full object-contain rounded-md mb-4" />
                   <Text className="text-xl font-medium text-[#1d3016] mb-2">{product.name}</Text>
                   <Text className="text-lg font-bold text-[#1d3016] mb-4">${product.price}</Text>
-                  <Button onClick={() => handleOpenChat(product)} className="bg-blue-600 text-white px-4 py-2 rounded-md">Message Seller</Button>
+                  <Button onClick={() => handleOpenChat(product)} className="bg-[#1d3016] text-white px-4 py-2 rounded-md hover:bg-[#162c10] transition-all">Message Seller</Button>
                 </div>
               ))}
             </div>

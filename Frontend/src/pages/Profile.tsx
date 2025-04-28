@@ -214,7 +214,7 @@ export function Profile() {
         <div className="flex flex-col md:flex-row gap-8 items-center">
           <div className="relative group">
             <img
-              src={userData?.profileImage || "/default-avatar.png"}
+              src={userData?.profileImage || "/images/profilepic.svg"}
               alt="Profile"
               className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-[#1d3016] shadow-lg group-hover:border-[#2a4520] transition-all duration-300"
             />
