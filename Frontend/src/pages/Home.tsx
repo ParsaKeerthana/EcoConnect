@@ -9,13 +9,37 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { formatDistanceToNow } from "date-fns";
 import Config from "../config/config.ts";
+import { Users, UserPlus } from "lucide-react";
 
 interface Post {
   postId?: string;
   content: string;
   authorId: string;
   createdDate?: string;
-  authorName?: string;
+  userName?: string;
+}
+
+interface Event {
+  id: string;
+  creatorId: string;
+  title: string;
+  description: string;
+  location: string;
+  date: string;
+  time: string;
+  dateTime: Date;
+  participants: number;
+}
+
+interface User {
+  id: string;
+  userName: string;
+  email: string;
+  followers: string[];
+  following: string[];
+  location?: string;
+  profileImage?: string;
+  bio?: string;
 }
 
 export const Home: React.FC = () => {
@@ -27,6 +51,8 @@ export const Home: React.FC = () => {
   const [token, setToken] = useState<string | null>(null); // token state
   const [isFetching, setIsFetching] = useState(false);
   const [canFetch, setCanFetch] = useState(true);
+  const [registeredEvents, setRegisteredEvents] = useState<Event[]>([]);
+  const [userData, setUserData] = useState<User | null>(null);
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -123,21 +149,21 @@ export const Home: React.FC = () => {
       content: "This is a sample post about eco-friendly living!",
       authorId: "user1",
       createdDate: new Date().toISOString(),
-      authorName: "User1",
+      userName: "User1",
     },
     {
       postId: "2",
       content: "Check out this amazing event happening in our community!",
       authorId: "user2",
       createdDate: new Date(Date.now() - 3600000).toISOString(),
-      authorName: "User2",
+      userName: "User2",
     },
     {
       postId: "3",
       content: "Recycling tips: Always rinse your containers before recycling.",
       authorId: "user3",
       createdDate: new Date(Date.now() - 7200000).toISOString(),
-      authorName: "User3",
+      userName: "User3",
     },
   ];
 
@@ -191,10 +217,38 @@ export const Home: React.FC = () => {
           },
         }
       );
+      console.log('Feed Response Data:', res.data);
+      console.log('First Post Data:', res.data[0]);
       const data: Post[] = res.data;
 
+      // Fetch user names for each post
+      const postsWithUserNames = await Promise.all(
+        data.map(async (post) => {
+          try {
+            const userRes = await axios.get(
+              `${Config.USER_SERVICE_URL}/getUserById/${post.authorId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+            return {
+              ...post,
+              authorName: userRes.data.userName || "Anonymous"
+            };
+          } catch (error) {
+            console.error("Error fetching user data:", error);
+            return {
+              ...post,
+              authorName: "Anonymous"
+            };
+          }
+        })
+      );
+
       const seen = new Set<string>();
-      const unique = data.filter((p) => {
+      const unique = postsWithUserNames.filter((p) => {
         if (!p.postId || seen.has(p.postId)) return false;
         seen.add(p.postId);
         return true;
@@ -208,6 +262,7 @@ export const Home: React.FC = () => {
       setLoading(false);
     }
   };
+
   const toLocalDateTimeFormat = (iso: string): string => {
     const date = new Date(iso);
     const pad = (n: number) => n.toString().padStart(2, "0");
@@ -221,12 +276,106 @@ export const Home: React.FC = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchFeed();
+    fetchRegisteredEvents();
+    fetchUserData();
   }, [isAuthenticated, user?.sub]);
+
+  const fetchRegisteredEvents = async () => {
+    if (!user?.sub) return;
+
+    try {
+      const response = await fetch(
+        `${Config.EVENT_SERVICE_URL}/eventsByUser/${user.sub}`
+      );
+      if (!response.ok) throw new Error("Failed to fetch registered events");
+
+      const data = await response.json();
+      const now = new Date();
+
+      const formattedEvents = data
+        .map((event: any) => ({
+          id: event.id,
+          creatorId: event.creatorId,
+          title: event.name,
+          description: event.description,
+          location: event.location,
+          date: event.dateTime.split("T")[0],
+          time: event.dateTime.split("T")[1].substring(0, 5),
+          dateTime: new Date(event.dateTime),
+          participants: event.rsvpUsers ? event.rsvpUsers.length : 0,
+        }))
+        .filter((event: Event) => event.dateTime > now)
+        .sort((a: Event, b: Event) => a.dateTime.getTime() - b.dateTime.getTime())
+        .slice(0, 3); // Only take the first 3 events
+
+      setRegisteredEvents(formattedEvents);
+    } catch (error) {
+      console.error("Error fetching registered events:", error);
+    }
+  };
+
+  const fetchUserData = async () => {
+    if (!user?.sub) return;
+
+    try {
+      const res = await axios.get<User>(
+        `${Config.USER_SERVICE_URL}/getUserById/${user.sub}`
+      );
+      setUserData(res.data);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
 
   return (
     <>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
       <div className="flex justify-center">
+        {/* Left Sidebar - User Profile */}
+        <div className="hidden lg:block w-80 mr-8">
+          <div className="sticky top-8">
+            <div className="bg-white rounded-xl shadow-md border-2 border-[#1D3016] p-6">
+              <div className="flex flex-col items-center">
+                <img
+                  src={userData?.profileImage || profileImage}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full border-2 border-[#1D3016] object-cover shadow-md hover:border-[#2a4520] transition-all duration-300"
+                />
+                <h2 className="text-xl font-bold text-[#1D3016] mt-4">
+                  {userData?.userName || "User"}
+                </h2>
+                {userData?.bio && (
+                  <p className="text-gray-600 text-center mt-2 italic">
+                    {userData.bio}
+                  </p>
+                )}
+                {userData?.location && (
+                  <p className="text-gray-600 text-center mt-1">
+                    📍 {userData.location}
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-6 grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 text-[#1D3016]">
+                    <Users className="w-5 h-5" />
+                    <span className="font-semibold">{userData?.followers.length || 0}</span>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">Followers</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 text-[#1D3016]">
+                    <UserPlus className="w-5 h-5" />
+                    <span className="font-semibold">{userData?.following.length || 0}</span>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">Following</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="w-full max-w-xl flex flex-col gap-[30px]">
           <div className="flex flex-col gap-2.5">
             <Textarea
@@ -246,9 +395,15 @@ export const Home: React.FC = () => {
           </div>
           <div className="mt-4 flex flex-col gap-4">
             {loading && feed.length === 0 ? (
-              <p className="text-center text-gray-500">Loading feed...</p>
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D3016]"></div>
+                <span className="ml-3 text-gray-600">Loading feed...</span>
+              </div>
             ) : feed.length === 0 ? (
-              <p className="text-center text-gray-500">No posts available.</p>
+              <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
+                <p className="text-gray-500 text-lg">No posts available.</p>
+                <p className="text-gray-400 text-sm mt-2">Be the first to share something!</p>
+              </div>
             ) : (
               feed.map((post, index) => {
                 const isLast = index === feed.length - 1;
@@ -256,29 +411,82 @@ export const Home: React.FC = () => {
                   <div
                     key={post.postId}
                     ref={isLast ? lastPostRef : null}
-                    className="flex flex-col gap-4 p-4 border rounded-md bg-gray-50 shadow-md"
+                    className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:translate-y-[-2px] border-2 border-[#1D3016] overflow-hidden"
                   >
-                    <div className="flex gap-3 items-start">
-                      <UserProfileCard
-                        userName={post.authorName}
-                        postContent={post.content}
-                        profileImage={profileImage}
-                      />
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {post.createdDate
-                        ? formatDistanceToNow(new Date(post.createdDate), {
-                            addSuffix: true,
-                          })
-                        : "Just now"}
+                    <div className="p-6">
+                      <div className="flex gap-4 items-start">
+                        <div className="flex-shrink-0">
+                          <img
+                            src={profileImage}
+                            alt="Profile"
+                            className="w-12 h-12 rounded-full border-2 border-[#1D3016] object-cover shadow-md hover:border-[#2a4520] transition-all duration-300"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-lg font-semibold text-[#1D3016] truncate hover:text-[#2a4520] transition-colors">
+                                {post.authorName}
+                              </h3>
+                              <span className="text-sm text-gray-500">•</span>
+                              <span className="text-sm text-gray-500">
+                                {post.createdDate
+                                  ? formatDistanceToNow(new Date(post.createdDate), {
+                                      addSuffix: true,
+                                    })
+                                  : "Just now"}
+                              </span>
+                            </div>
+                            <p className="text-gray-700 whitespace-pre-wrap break-words mt-2 leading-relaxed">
+                              {post.content}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
               })
             )}
             {loading && feed.length > 0 && (
-              <p className="text-center text-gray-500">Loading more...</p>
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1D3016]"></div>
+                <span className="ml-2 text-gray-600">Loading more...</span>
+              </div>
             )}
+          </div>
+        </div>
+
+        {/* Right Sidebar - Upcoming Events */}
+        <div className="hidden lg:block w-80 ml-8">
+          <div className="sticky top-8">
+            <div className="bg-white rounded-xl shadow-md border-2 border-[#1D3016] p-6">
+              <h2 className="text-2xl font-bold text-[#1D3016] mb-4">Upcoming Events</h2>
+              {registeredEvents.length === 0 ? (
+                <p className="text-gray-500">No upcoming events</p>
+              ) : (
+                <div className="space-y-4">
+                  {registeredEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0"
+                    >
+                      <h3 className="font-semibold text-[#1D3016] mb-2">{event.title}</h3>
+                      <div className="text-sm text-gray-600">
+                        <p className="flex items-center gap-2">
+                          <span>📅</span>
+                          {event.date} at {event.time}
+                        </p>
+                        <p className="flex items-center gap-2 mt-1">
+                          <span>📍</span>
+                          {event.location}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
