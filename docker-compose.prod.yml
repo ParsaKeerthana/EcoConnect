@@ -31,9 +31,9 @@ services:
   chatbot-service:
     image: keerthanaparsa/chatbot-service:${TAG:-latest}
     ports:
-      - "5000:5000"  # Map container port to host port
+      - "5000:5000"
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}  # Pass the API key as an environment variable
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - PYTHONUNBUFFERED=1
     networks:
       - mynetwork
