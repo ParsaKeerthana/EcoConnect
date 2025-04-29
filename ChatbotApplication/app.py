@@ -8,7 +8,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}}, supports_credentials=True)
+CORS(app, resources={r"/api/*": {"origins": "https://app.econnectservices.tech"}}, supports_credentials=True)
 
 
 
@@ -52,4 +52,4 @@ def chat():
         return jsonify({"reply": "OpenAI API error occurred."}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True)
