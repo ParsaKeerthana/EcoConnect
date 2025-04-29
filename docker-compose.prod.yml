@@ -27,14 +27,11 @@ services:
       - kafka
     networks:
       - mynetwork
-  
+
   chatbot-service:
     image: keerthanaparsa/chatbot-service:${TAG:-latest}
     ports:
-      - "5000:5000"  # Map container port to host port
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}  # Pass the API key as an environment variable
-      - PYTHONUNBUFFERED=1
+      - "5000:5000"
     networks:
       - mynetwork
 
