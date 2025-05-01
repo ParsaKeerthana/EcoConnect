@@ -5,7 +5,7 @@ const Config = {
     MARKETPLACE_SERVICE_URL: '/api/marketplace',
     FEED_SERVICE_URL: '/api/feed',
     EVENT_SERVICE_URL: '/api/events',
-    CHATBOT_SERVICE_URL: 'http://127.0.0.1:5000/api/chat',
+    CHATBOT_SERVICE_URL: '/api/chat',
 };
 
 export default Config;
