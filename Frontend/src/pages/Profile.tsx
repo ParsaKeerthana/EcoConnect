@@ -68,13 +68,13 @@ export function Profile() {
 
       try {
         const res = await axios.get<User>(
-            `${Config.USER_SERVICE_URL}/getUserById/${user.sub}`
+          `${Config.USER_SERVICE_URL}/getUserById/${user.sub}`
         );
         const fetchedUser = res.data;
         setUserData(fetchedUser);
 
         const postsRes = await axios.get<Post[]>(
-            `${Config.POST_SERVICE_URL}/getUserPosts/${fetchedUser.id}`
+          `${Config.POST_SERVICE_URL}/getUserPosts/${fetchedUser.id}`
         );
         setPosts(postsRes.data);
         setDisplayedPosts(postsRes.data.slice(0, POSTS_PER_PAGE));
@@ -100,10 +100,7 @@ export function Profile() {
   useEffect(() => {
     if (observer.current) observer.current.disconnect();
     observer.current = new IntersectionObserver((entries) => {
-      if (
-          entries[0].isIntersecting &&
-          displayedPosts.length < posts.length
-      ) {
+      if (entries[0].isIntersecting && displayedPosts.length < posts.length) {
         const nextPage = page + 1;
         const nextSlice = posts.slice(0, nextPage * POSTS_PER_PAGE);
         setDisplayedPosts(nextSlice);
@@ -159,20 +156,20 @@ export function Profile() {
     if (!userData) return;
     try {
       await axios.put(
-          `${Config.POST_SERVICE_URL}/updatePost/${userData.id}/${postId}?isAdmin=false`,
-          {
-            content: editContent,
-          }
+        `${Config.POST_SERVICE_URL}/updatePost/${userData.id}/${postId}?isAdmin=false`,
+        {
+          content: editContent,
+        }
       );
       setPosts((prev) =>
-          prev.map((post) =>
-              post.postId === postId ? { ...post, content: editContent } : post
-          )
+        prev.map((post) =>
+          post.postId === postId ? { ...post, content: editContent } : post
+        )
       );
       setDisplayedPosts((prev) =>
-          prev.map((post) =>
-              post.postId === postId ? { ...post, content: editContent } : post
-          )
+        prev.map((post) =>
+          post.postId === postId ? { ...post, content: editContent } : post
+        )
       );
       setEditPostId(null);
       toast.success("Post updated successfully!");
@@ -186,7 +183,7 @@ export function Profile() {
     if (!userData) return;
     try {
       await axios.delete(
-          `${Config.POST_SERVICE_URL}/deletePost/${userData.id}/${postId}?isAdmin=false`
+        `${Config.POST_SERVICE_URL}/deletePost/${userData.id}/${postId}?isAdmin=false`
       );
       const filtered = posts.filter((post) => post.postId !== postId);
       setPosts(filtered);
@@ -199,7 +196,7 @@ export function Profile() {
   };
 
   const handleProfileInputChange = (
-      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setProfileForm((prev) => ({ ...prev, [name]: value }));
@@ -210,13 +207,13 @@ export function Profile() {
 
     try {
       const res = await axios.put(
-          `${Config.USER_SERVICE_URL}/${userData.userName}`,
-          {
-            ...userData,
-            location: profileForm.location,
-            profileImage: profileForm.profileImage,
-            bio: profileForm.bio,
-          }
+        `${Config.USER_SERVICE_URL}/${userData.userName}`,
+        {
+          ...userData,
+          location: profileForm.location,
+          profileImage: profileForm.profileImage,
+          bio: profileForm.bio,
+        }
       );
       setUserData(res.data);
       setIsEditingProfile(false);
@@ -244,221 +241,285 @@ export function Profile() {
 
   if (!isAuthenticated)
     return (
-        <div className="text-center mt-8 text-gray-600">
-          Please log in to view your profile.
-        </div>
+      <div className="text-center mt-8 text-gray-600">
+        Please log in to view your profile.
+      </div>
     );
 
   return (
-      <div className="max-w-3xl mx-auto mt-10 p-4 h-[calc(100vh-64px)] flex flex-col">
-        <ToastContainer />
-
-        {/* Sticky Profile Card */}
-        <div className="sticky top-16 z-10 bg-white border shadow-lg rounded-2xl p-6 mb-4">
-          <div className="flex items-center gap-4 mb-4">
-            <UserIcon className="w-10 h-10 text-[#1d3016]" />
-            <h1 className="text-3xl font-semibold text-[#1d3016]">
-              Your Profile
-            </h1>
+    <div className="max-w-4xl mx-auto py-8 px-4 min-h-[calc(100vh-64px)] bg-gradient-to-b from-gray-50 to-white">
+      {/* Profile Header Section */}
+      <div className="bg-white rounded-3xl shadow-xl p-8 mb-8 transform hover:scale-[1.02] transition-transform duration-300 border-2 border-[#1d3016]">
+        <div className="flex flex-col md:flex-row gap-8 items-center">
+          <div className="relative group">
+            <img
+              src={userData?.profileImage || "/default-avatar.png"}
+              alt="Profile"
+              className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-[#1d3016] shadow-lg group-hover:border-[#2a4520] transition-all duration-300"
+            />
+            <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300" />
           </div>
-          <div className="ml-2 space-y-3 text-gray-700 relative">
-            <p className="flex items-center gap-2">
-              <UserIcon size={18} className="text-[#1d3016]" />{" "}
-              <strong>Name:</strong> {userData?.userName}
-            </p>
-            <p className="flex items-center gap-2">
-              <Mail size={18} className="text-[#1d3016]" />{" "}
-              <strong>Email:</strong> {userData?.email}
-            </p>
-            <p className="flex items-center gap-2">
-              <Users size={18} className="text-[#1d3016]" />{" "}
-              <strong>Followers:</strong> {userData?.followers.length}
-            </p>
-            <p className="flex items-center gap-2">
-              <UserPlus size={18} className="text-[#1d3016]" />{" "}
-              <strong>Following:</strong> {userData?.following.length}
-            </p>
-            <p className="flex items-center gap-2">📍 <strong>Location:</strong> {userData?.location || "N/A"}</p>
-            <p className="flex items-center gap-2">📝 <strong>About me:</strong> {userData?.bio || "N/A"}</p>
 
-            {/* Edit and Settings buttons */}
+          <div className="flex-1 text-center md:text-left">
+            <h1 className="text-4xl font-bold text-[#1d3016] mb-2">
+              {userData?.userName}
+            </h1>
+            <p className="text-lg text-gray-600 mb-3 italic">
+              {userData?.bio || "This user hasn't added a bio yet."}
+            </p>
+            <div className="flex items-center justify-center md:justify-start gap-2 text-gray-500 mb-4">
+              <Mail className="w-5 h-5"/>
+              <span>{userData?.email}</span>
+            </div>
+            <div className="flex items-center justify-center md:justify-start gap-2 text-gray-500">
+              <UserIcon className="w-5 h-5"/>
+              <span>📍 {userData?.location || "Location not set"}</span>
+            </div>
+
             <button
                 onClick={() => setIsEditingProfile(true)}
-                className="absolute bottom-4 right-14 bg-white border rounded-full p-2 shadow hover:bg-gray-100 group"
+                className="mt-6 bg-[#1d3016] text-white py-2.5 px-6 rounded-full shadow-lg hover:bg-[#2a4520] transform hover:translate-y-[-2px] transition-all duration-300 flex items-center justify-center gap-2 mx-auto md:mx-0"
             >
-              <Pencil size={18} className="text-gray-600 group-hover:text-black" />
-              <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs bg-black text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              Edit
-            </span>
+              <Pencil className="w-4 h-4"/>
+              Edit Profile
             </button>
 
             <button
                 onClick={fetchPreferences}
                 className="absolute bottom-4 right-4 bg-white border rounded-full p-2 shadow hover:bg-gray-100 group"
             >
-              <Settings size={18} className="text-gray-600 group-hover:text-black" />
-              <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs bg-black text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <Settings size={18} className="text-gray-600 group-hover:text-black"/>
+              <span
+                  className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs bg-black text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               Settings
             </span>
             </button>
+
           </div>
-        </div>
 
-        {/* Edit Profile Modal */}
-        {isEditingProfile && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-              <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md space-y-4">
-                <h2 className="text-xl font-semibold text-[#1d3016] mb-2">Edit Profile</h2>
-                <p>Location:</p>
-                <input
-                    type="text"
-                    name="location"
-                    value={profileForm.location}
-                    onChange={handleProfileInputChange}
-                    placeholder="Location"
-                    className="w-full p-2 border border-[#1d3016] rounded"
-                />
-                <p>About:</p>
-                <textarea
-                    name="bio"
-                    value={profileForm.bio}
-                    onChange={handleProfileInputChange}
-                    placeholder="Bio"
-                    rows={3}
-                    className="w-full p-2 border border-[#1d3016] rounded resize-none"
-                />
-                <div className="flex justify-end gap-2">
-                  <button
-                      className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
-                      onClick={() => setIsEditingProfile(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                      className="bg-[#1d3016] hover:bg-[#162c10] text-white px-4 py-2 rounded"
-                      onClick={handleSaveProfile}
-                  >
-                    Save
-                  </button>
-                </div>
-              </div>
-            </div>
-        )}
-
-        {/* Notification Preferences Modal */}
-        {isPreferencesOpen && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-              <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md space-y-4">
-                <h2 className="text-xl font-semibold text-[#1d3016] mb-2">
-                  Notification Preferences
-                </h2>
-                <div className="flex flex-col gap-4">
-                  <label className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        checked={preferences.receiveEventNotifications}
-                        onChange={(e) =>
-                            setPreferences((prev) => ({
-                              ...prev,
-                              receiveEventNotifications: e.target.checked,
-                            }))
-                        }
-                    />
-                    Receive Event Notifications
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        checked={preferences.receiveProductNotifications}
-                        onChange={(e) =>
-                            setPreferences((prev) => ({
-                              ...prev,
-                              receiveProductNotifications: e.target.checked,
-                            }))
-                        }
-                    />
-                    Receive Product Notifications
-                  </label>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-4">
-                  <button
-                      className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
-                      onClick={() => setIsPreferencesOpen(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                      className="bg-[#1d3016] hover:bg-[#162c10] text-white px-4 py-2 rounded"
-                      onClick={savePreferences}
-                  >
-                    Save
-                  </button>
-                </div>
-              </div>
-            </div>
-        )}
-
-        {/* Scrollable Posts Section */}
-        <div className="flex-1 overflow-y-auto pr-1">
-          <h2 className="text-2xl font-bold mb-4 text-[#1d3016]">Your Posts</h2>
-          <ul className="space-y-4">
-            {displayedPosts.map((post, index) => (
-                <li
-                    key={post.postId}
-                    className="bg-white p-4 border border-[#1d3016] rounded-xl shadow"
-                    ref={index === displayedPosts.length - 1 ? lastPostRef : undefined}
-                >
-                  {editPostId === post.postId ? (
-                      <>
-                  <textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full border border-[#1d3016] rounded p-2 mb-3 resize-none"
-                      rows={3}
-                  />
-                        <div className="flex gap-3">
-                          <button
-                              onClick={() => handleSave(post.postId)}
-                              className="flex items-center gap-1 bg-[#1d3016] hover:bg-[#162c10] text-white px-3 py-1.5 rounded"
-                          >
-                            <Save size={16} /> Save
-                          </button>
-                          <button
-                              onClick={() => setEditPostId(null)}
-                              className="flex items-center gap-1 bg-gray-400 hover:bg-gray-500 text-white px-3 py-1.5 rounded"
-                          >
-                            <X size={16} /> Cancel
-                          </button>
-                        </div>
-                      </>
-                  ) : (
-                      <>
-                        <p className="mb-2 text-gray-800">{post.content}</p>
-                        <div className="text-sm text-gray-500 mb-2 flex items-center gap-1">
-                          <CalendarDays size={16} />
-                          {formatDate(post.lastModifiedDate)}
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                              className="flex items-center gap-1 text-[#1d3016] hover:underline"
-                              onClick={() => handleEdit(post)}
-                          >
-                            <Edit3 size={16} /> Edit
-                          </button>
-                          <button
-                              className="flex items-center gap-1 text-red-600 hover:underline"
-                              onClick={() => handleDelete(post.postId!)}
-                          >
-                            <Trash2 size={16} /> Delete
-                          </button>
-                        </div>
-                      </>
-                  )}
-                </li>
-            ))}
-          </ul>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      {isEditingProfile && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md space-y-4">
+              <h2 className="text-xl font-semibold text-[#1d3016] mb-2">Edit Profile</h2>
+              <p>Location:</p>
+              <input
+                  type="text"
+                  name="location"
+                  value={profileForm.location}
+                  onChange={handleProfileInputChange}
+                  placeholder="Location"
+                  className="w-full p-2 border border-[#1d3016] rounded"
+              />
+              <p>About:</p>
+              <textarea
+                  name="bio"
+                  value={profileForm.bio}
+                  onChange={handleProfileInputChange}
+                  placeholder="Bio"
+                  rows={3}
+                  className="w-full p-2 border border-[#1d3016] rounded resize-none"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
+                    onClick={() => setIsEditingProfile(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                    className="bg-[#1d3016] hover:bg-[#162c10] text-white px-4 py-2 rounded"
+                    onClick={handleSaveProfile}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+      )}
+
+      {/* Analytics Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div
+            className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-[1.02] border-2 border-[#1d3016]">
+          <div className="flex items-center justify-between">
+            <div className="bg-[#1d3016] bg-opacity-10 p-3 rounded-full">
+              <Users className="w-6 h-6 text-[#1d3016]"/>
+            </div>
+            <span className="text-3xl font-bold text-[#1d3016]">{userData?.followers.length}</span>
+          </div>
+          <p className="mt-2 text-gray-600 font-medium">Followers</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-[1.02] border-2 border-[#1d3016]">
+          <div className="flex items-center justify-between">
+            <div className="bg-[#1d3016] bg-opacity-10 p-3 rounded-full">
+              <UserPlus className="w-6 h-6 text-[#1d3016]" />
+            </div>
+            <span className="text-3xl font-bold text-[#1d3016]">{userData?.following.length}</span>
+          </div>
+          <p className="mt-2 text-gray-600 font-medium">Following</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-[1.02] border-2 border-[#1d3016]">
+          <div className="flex items-center justify-between">
+            <div className="bg-[#1d3016] bg-opacity-10 p-3 rounded-full">
+              <Edit3 className="w-6 h-6 text-[#1d3016]" />
+            </div>
+            <span className="text-3xl font-bold text-[#1d3016]">{posts.length}</span>
+          </div>
+          <p className="mt-2 text-gray-600 font-medium">Posts</p>
+        </div>
+      </div>
+
+      {/* Notification Preferences Modal */}
+      {isPreferencesOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md space-y-4">
+              <h2 className="text-xl font-semibold text-[#1d3016] mb-2">
+                Notification Preferences
+              </h2>
+              <div className="flex flex-col gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                      type="checkbox"
+                      checked={preferences.receiveEventNotifications}
+                      onChange={(e) =>
+                          setPreferences((prev) => ({
+                            ...prev,
+                            receiveEventNotifications: e.target.checked,
+                          }))
+                      }
+                  />
+                  Receive Event Notifications
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                      type="checkbox"
+                      checked={preferences.receiveProductNotifications}
+                      onChange={(e) =>
+                          setPreferences((prev) => ({
+                            ...prev,
+                            receiveProductNotifications: e.target.checked,
+                          }))
+                      }
+                  />
+                  Receive Product Notifications
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <button
+                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
+                    onClick={() => setIsPreferencesOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                    className="bg-[#1d3016] hover:bg-[#162c10] text-white px-4 py-2 rounded"
+                    onClick={savePreferences}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+      )}
+
+
+      {/* Posts Section */}
+      <div className="flex-1 overflow-y-auto">
+        <h2 className="text-2xl font-bold text-[#1d3016] mb-6 flex items-center gap-3">
+          <Edit3 className="w-6 h-6" />
+          Your Posts
+        </h2>
+        <ul className="space-y-6">
+          {displayedPosts.map((post, index) => {
+            const isLast = index === displayedPosts.length - 1;
+            return (
+              <li
+                key={post.postId}
+                ref={isLast ? lastPostRef : undefined}
+                className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#1d3016]"
+              >
+                {editPostId === post.postId ? (
+                  <>
+                    <textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="w-full border-2 border-[#1d3016] rounded-xl p-4 mb-4 resize-none focus:ring-2 focus:ring-[#1d3016] focus:outline-none"
+                      rows={3}
+                    />
+                    <div className="flex gap-3 justify-end">
+                      <button
+                        onClick={() => handleSave(post.postId)}
+                        className="flex items-center gap-2 bg-[#1d3016] text-white py-2 px-4 rounded-lg hover:bg-[#2a4520] transition-colors duration-300"
+                      >
+                        <Save className="w-4 h-4" />
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditPostId(null)}
+                        className="flex items-center gap-2 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300"
+                      >
+                        <X className="w-4 h-4" />
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-800 text-lg mb-4">{post.content}</p>
+                    <div className="flex justify-between items-center text-sm">
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <CalendarDays className="w-4 h-4" />
+                        {formatDate(post.lastModifiedDate)}
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleEdit(post)}
+                          className="flex items-center gap-1 text-[#1d3016] hover:text-[#2a4520] transition-colors duration-300 bg-[#1d3016] bg-opacity-10 px-3 py-1.5 rounded-lg hover:bg-opacity-20"
+                        >
+                          <Pencil className="w-4 h-4" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(post.postId!)}
+                          className="flex items-center gap-1 text-red-600 hover:text-red-700 transition-colors duration-300 bg-red-100 px-3 py-1.5 rounded-lg hover:bg-red-200"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+
+        {/* Empty State for Posts */}
+        {displayedPosts.length === 0 && (
+          <div className="text-center py-12">
+            <Edit3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">You have no posts yet.</p>
+          </div>
+        )}
+
+        {/* Infinite Scroll Indicator */}
+        {displayedPosts.length === posts.length && displayedPosts.length > 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No more posts to show</p>
+          </div>
+        )}
+      </div>
+
+      {/* Toast Notifications */}
+      <ToastContainer position="bottom-right" />
+    </div>
   );
 }
