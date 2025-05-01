@@ -13,6 +13,7 @@ import {
   Trash2,
   Edit3,
   CalendarDays,
+  Settings,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -49,6 +50,12 @@ export function Profile() {
     location: "",
     bio: "",
     profileImage: "",
+  });
+
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
+  const [preferences, setPreferences] = useState({
+    receiveEventNotifications: false,
+    receiveProductNotifications: false,
   });
 
   const POSTS_PER_PAGE = 5;
@@ -107,6 +114,38 @@ export function Profile() {
 
     return () => observer.current?.disconnect();
   }, [posts, displayedPosts, page]);
+
+  const fetchPreferences = async () => {
+    if (!user?.sub) return;
+    try {
+      const res = await axios.get(
+          `${Config.NOTIFICATION_SERVICE_URL}/${user.sub}`
+      );
+      setPreferences({
+        receiveEventNotifications: res.data.receiveEventNotifications || false,
+        receiveProductNotifications: res.data.receiveProductNotifications || false,
+      });
+      setIsPreferencesOpen(true);
+    } catch (err) {
+      console.error("Failed to fetch preferences", err);
+      toast.error("Failed to fetch notification settings.");
+    }
+  };
+
+  const savePreferences = async () => {
+    if (!user?.sub) return;
+    try {
+      await axios.post(
+          `${Config.NOTIFICATION_SERVICE_URL}/${user.sub}`,
+          preferences
+      );
+      toast.success("Notification preferences saved!");
+      setIsPreferencesOpen(false);
+    } catch (err) {
+      console.error("Failed to save preferences", err);
+      toast.error("Failed to save notification settings.");
+    }
+  };
 
   const handleEdit = (post: Post) => {
     setEditPostId(post.postId || null);
@@ -220,7 +259,7 @@ export function Profile() {
             />
             <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300" />
           </div>
-          
+
           <div className="flex-1 text-center md:text-left">
             <h1 className="text-4xl font-bold text-[#1d3016] mb-2">
               {userData?.userName}
@@ -229,37 +268,92 @@ export function Profile() {
               {userData?.bio || "This user hasn't added a bio yet."}
             </p>
             <div className="flex items-center justify-center md:justify-start gap-2 text-gray-500 mb-4">
-              <Mail className="w-5 h-5" />
+              <Mail className="w-5 h-5"/>
               <span>{userData?.email}</span>
             </div>
             <div className="flex items-center justify-center md:justify-start gap-2 text-gray-500">
-              <UserIcon className="w-5 h-5" />
+              <UserIcon className="w-5 h-5"/>
               <span>📍 {userData?.location || "Location not set"}</span>
             </div>
 
             <button
-              onClick={() => setIsEditingProfile(true)}
-              className="mt-6 bg-[#1d3016] text-white py-2.5 px-6 rounded-full shadow-lg hover:bg-[#2a4520] transform hover:translate-y-[-2px] transition-all duration-300 flex items-center justify-center gap-2 mx-auto md:mx-0"
+                onClick={() => setIsEditingProfile(true)}
+                className="mt-6 bg-[#1d3016] text-white py-2.5 px-6 rounded-full shadow-lg hover:bg-[#2a4520] transform hover:translate-y-[-2px] transition-all duration-300 flex items-center justify-center gap-2 mx-auto md:mx-0"
             >
-              <Pencil className="w-4 h-4" />
+              <Pencil className="w-4 h-4"/>
               Edit Profile
             </button>
+
+            <button
+                onClick={fetchPreferences}
+                className="absolute bottom-4 right-4 bg-white border rounded-full p-2 shadow hover:bg-gray-100 group"
+            >
+              <Settings size={18} className="text-gray-600 group-hover:text-black"/>
+              <span
+                  className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs bg-black text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              Settings
+            </span>
+            </button>
+
           </div>
+
         </div>
       </div>
 
+      {/* Edit Profile Modal */}
+      {isEditingProfile && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md space-y-4">
+              <h2 className="text-xl font-semibold text-[#1d3016] mb-2">Edit Profile</h2>
+              <p>Location:</p>
+              <input
+                  type="text"
+                  name="location"
+                  value={profileForm.location}
+                  onChange={handleProfileInputChange}
+                  placeholder="Location"
+                  className="w-full p-2 border border-[#1d3016] rounded"
+              />
+              <p>About:</p>
+              <textarea
+                  name="bio"
+                  value={profileForm.bio}
+                  onChange={handleProfileInputChange}
+                  placeholder="Bio"
+                  rows={3}
+                  className="w-full p-2 border border-[#1d3016] rounded resize-none"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
+                    onClick={() => setIsEditingProfile(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                    className="bg-[#1d3016] hover:bg-[#162c10] text-white px-4 py-2 rounded"
+                    onClick={handleSaveProfile}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+      )}
+
       {/* Analytics Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-[1.02] border-2 border-[#1d3016]">
+        <div
+            className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-[1.02] border-2 border-[#1d3016]">
           <div className="flex items-center justify-between">
             <div className="bg-[#1d3016] bg-opacity-10 p-3 rounded-full">
-              <Users className="w-6 h-6 text-[#1d3016]" />
+              <Users className="w-6 h-6 text-[#1d3016]"/>
             </div>
             <span className="text-3xl font-bold text-[#1d3016]">{userData?.followers.length}</span>
           </div>
           <p className="mt-2 text-gray-600 font-medium">Followers</p>
         </div>
-        
+
         <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-[1.02] border-2 border-[#1d3016]">
           <div className="flex items-center justify-between">
             <div className="bg-[#1d3016] bg-opacity-10 p-3 rounded-full">
@@ -269,7 +363,7 @@ export function Profile() {
           </div>
           <p className="mt-2 text-gray-600 font-medium">Following</p>
         </div>
-        
+
         <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-[1.02] border-2 border-[#1d3016]">
           <div className="flex items-center justify-between">
             <div className="bg-[#1d3016] bg-opacity-10 p-3 rounded-full">
@@ -280,6 +374,61 @@ export function Profile() {
           <p className="mt-2 text-gray-600 font-medium">Posts</p>
         </div>
       </div>
+
+      {/* Notification Preferences Modal */}
+      {isPreferencesOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md space-y-4">
+              <h2 className="text-xl font-semibold text-[#1d3016] mb-2">
+                Notification Preferences
+              </h2>
+              <div className="flex flex-col gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                      type="checkbox"
+                      checked={preferences.receiveEventNotifications}
+                      onChange={(e) =>
+                          setPreferences((prev) => ({
+                            ...prev,
+                            receiveEventNotifications: e.target.checked,
+                          }))
+                      }
+                  />
+                  Receive Event Notifications
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                      type="checkbox"
+                      checked={preferences.receiveProductNotifications}
+                      onChange={(e) =>
+                          setPreferences((prev) => ({
+                            ...prev,
+                            receiveProductNotifications: e.target.checked,
+                          }))
+                      }
+                  />
+                  Receive Product Notifications
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <button
+                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
+                    onClick={() => setIsPreferencesOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                    className="bg-[#1d3016] hover:bg-[#162c10] text-white px-4 py-2 rounded"
+                    onClick={savePreferences}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+      )}
+
 
       {/* Posts Section */}
       <div className="flex-1 overflow-y-auto">
